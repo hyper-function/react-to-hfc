@@ -39,6 +39,7 @@ export default function reactToHfc(
   Comp: ComponentClass | FunctionComponent,
   opts: {
     tag: string;
+    connected?: (container: HTMLElement, props: HfcProps) => void;
     disconnected?: () => void;
   }
 ): typeof HyperFunctionComponent {
@@ -47,6 +48,7 @@ export default function reactToHfc(
     reactRoot: any;
     RC = Comp;
     constructor(public container: HTMLElement, props: HfcProps) {
+      if (opts.connected) opts.connected(container, props);
       const reactProps = toReactProps(props);
 
       const createRoot = (ReactDom as any).createRoot;
