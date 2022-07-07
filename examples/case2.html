@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>case 2</title>
+  </head>
+  <body>
+    <div id="mt"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://cdn.jsdelivr.net/npm/react@17.0.2/+esm",
+          "react-dom": "https://cdn.jsdelivr.net/npm/react-dom@17.0.2/+esm"
+        }
+      }
+    </script>
+    <script type="module">
+      import React from "react";
+      import ReactDom from "react-dom";
+      import reactToHfc from "../dist/index.js";
+
+      let i = 0;
+      function Comp() {
+        console.log("render");
+        const [arr, setArr] = React.useState([]);
+
+        React.useEffect(() => {
+          const ii = i++;
+          setInterval(() => {
+            setArr((arr) => [...arr, ii + " - " + Date.now()]);
+          }, 1000);
+        }, []);
+
+        return arr.map((a) => React.createElement("div", null, a));
+      }
+
+      // ReactDom.createPortal(
+      //   React.createElement(Comp),
+      //   document.getElementById("mt")
+      // );
+
+      ReactDom.render(
+        ReactDom.createPortal(
+          React.createElement(Comp),
+          document.getElementById("mt")
+        ),
+
+        document.createDocumentFragment()
+      );
+      ReactDom.render(
+        ReactDom.createPortal(
+          React.createElement(Comp),
+          document.getElementById("mt")
+        ),
+
+        document.createDocumentFragment()
+      );
+    </script>
+  </body>
+</html>

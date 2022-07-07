@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>react case 1</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://cdn.jsdelivr.net/npm/react@17.0.2/+esm",
+          "react-dom": "https://cdn.jsdelivr.net/npm/react-dom@17.0.2/+esm"
+        }
+      }
+    </script>
+    <script type="module">
+      import React from "react";
+      import ReactDom from "react-dom";
+      import reactToHfc from "../dist/index.js";
+
+      const { useEffect, useState } = React;
+      function Comp(props) {
+        const a = useState(0);
+        useEffect(() => {
+          console.log("mounted");
+          return () => {
+            console.log("unmounted");
+          };
+        }, []);
+
+        console.log("do render");
+        return React.createElement(
+          "div",
+          null,
+          `Hello ${props.a} ${props.b} ${props.c}`
+        );
+      }
+
+      const container = document.getElementById("app");
+
+      const Hoc = reactToHfc(Comp, {
+        shadow: "open",
+        // replaceContainer: true,
+      });
+      const hoc = new Hoc({
+        attrs: {
+          a: 1,
+          b: 4,
+          c: 7,
+        },
+        events: {},
+        slots: {},
+      });
+
+      hoc.connected(container);
+      setTimeout(() => {
+        // hoc.changed("attr", "a", 1, 2);
+        // hoc.changed("attr", "b", 4, 5);
+        hoc.changed("attr", "c", 7, 8);
+      }, 1000);
+      // setTimeout(() => {
+      //   hoc.disconnected();
+      // }, 2000);
+
+      // const root = ReactDom.createRoot(document.getElementById("app"));
+      // root.render(React.createElement(Comp));
+    </script>
+  </body>
+</html>
