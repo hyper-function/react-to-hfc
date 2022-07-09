@@ -43,10 +43,10 @@ export default function reactToHfc(
     disconnected?: () => void;
   }
 ): typeof HyperFunctionComponent {
-  class HfcComponent {
+  class ReactHFC {
     static tag: string;
     reactRoot: any;
-    RC = Comp;
+    static RC = Comp;
     constructor(public container: HTMLElement, props: HfcProps) {
       if (opts.connected) opts.connected(container, props);
       const reactProps = toReactProps(props);
@@ -79,9 +79,9 @@ export default function reactToHfc(
     }
   }
 
-  HfcComponent.tag = opts.tag;
+  ReactHFC.tag = opts.tag;
 
-  return HfcComponent;
+  return ReactHFC;
 }
 
 export function toHfcSlot(
