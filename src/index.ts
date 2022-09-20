@@ -1,25 +1,29 @@
 import {
   useRef,
+  useEffect,
   createElement,
   ComponentClass,
-  useLayoutEffect,
   FunctionComponent,
   createElement as h,
 } from "react";
 import * as ReactDom from "react-dom";
 
 const slotComponent =
-  (renderSlot: (container: HTMLElement, args: any) => void) =>
-  (ps: Record<string, any>) => {
-    const ref = useRef<HTMLElement>(null);
-    useLayoutEffect(() => {
+  (renderSlot: (container: Element, args: any) => void) =>
+  (props: Record<string, any>) => {
+    const ps = { ...props };
+    const key = ps.__key;
+    const ref = useRef<Element>(null);
+    useEffect(() => {
+      if (key) ps.key = key;
       renderSlot(ref.current!, ps);
     });
 
-    const props = ps.__props || {};
-    props.ref = ref;
+    const __props = ps.__props || {};
+    __props.ref = ref;
+    if (key) __props.key = key;
 
-    return h(ps.__tag || "div", props, null);
+    return h(ps.__tag || "div", __props, null);
   };
 
 function toReactProps(props: HfcProps) {
@@ -35,53 +39,59 @@ function toReactProps(props: HfcProps) {
   return reactProps;
 }
 
-export default function reactToHfc(
+export function reactToHfc(
   Comp: ComponentClass | FunctionComponent,
   opts: {
     tag: string;
-    connected?: (container: HTMLElement, props: HfcProps) => void;
+    hfc: string;
+    ver: string;
+    names: [string[], string[], string[]];
+    connected?: (container: Element, props: HfcProps) => void;
     disconnected?: () => void;
   }
-): typeof HyperFunctionComponent {
-  class ReactHFC {
-    static tag: string;
-    reactRoot: any;
-    static RC = Comp;
-    constructor(public container: HTMLElement, props: HfcProps) {
-      if (opts.connected) opts.connected(container, props);
-      const reactProps = toReactProps(props);
+): HyperFunctionComponent {
+  const HFC: HyperFunctionComponent = (container: Element, props: HfcProps) => {
+    if (opts.connected) opts.connected(container, props);
+    const reactProps = toReactProps(props);
 
-      const createRoot = (ReactDom as any).createRoot;
-      if (createRoot) {
-        this.reactRoot = createRoot(container);
-        this.reactRoot.render(h(Comp, reactProps));
-      } else {
-        ReactDom.render(h(Comp, reactProps), container);
-      }
+    let root: any;
+    const createRoot = (ReactDom as any).createRoot;
+    if (createRoot) {
+      root = createRoot(container);
+      root.render(h(Comp, reactProps));
+    } else {
+      ReactDom.render(h(Comp, reactProps), container);
     }
-    changed(props: HfcProps) {
-      const reactProps = toReactProps(props);
 
-      if (this.reactRoot) {
-        this.reactRoot.render(h(Comp, reactProps));
-      } else {
-        ReactDom.render(h(Comp, reactProps), this.container);
-      }
-    }
-    disconnected() {
-      if (this.reactRoot) {
-        this.reactRoot.unmount();
-      } else {
-        ReactDom.unmountComponentAtNode(this.container);
-      }
+    return {
+      changed(props) {
+        const reactProps = toReactProps(props);
 
-      if (opts.disconnected) opts.disconnected();
-    }
-  }
+        if (root) {
+          root.render(h(Comp, reactProps));
+        } else {
+          ReactDom.render(h(Comp, reactProps), container);
+        }
+      },
 
-  ReactHFC.tag = opts.tag;
+      disconnected() {
+        if (root) {
+          root.unmount();
+        } else {
+          ReactDom.unmountComponentAtNode(container);
+        }
 
-  return ReactHFC;
+        if (opts.disconnected) opts.disconnected();
+      },
+    };
+  };
+
+  HFC.tag = opts.tag;
+  HFC.hfc = opts.hfc;
+  HFC.ver = opts.ver;
+  HFC.names = opts.names;
+
+  return HFC;
 }
 
 export function toHfcSlot(
