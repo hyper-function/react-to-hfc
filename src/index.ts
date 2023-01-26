@@ -54,7 +54,7 @@ export type Options = {
 };
 
 let uid = 0;
-let forceUpdate: () => void;
+let forceUpdate: () => void = () => {};
 export const rootElement = document.createElement("div");
 
 const protals = new Map<
