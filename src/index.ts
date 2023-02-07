@@ -54,10 +54,10 @@ export type Options = {
 };
 
 let uid = 0;
-let forceUpdate: () => void = () => {};
+let forceUpdate = () => {};
 export const rootElement = document.createElement("div");
 
-const protals = new Map<
+const portals = new Map<
   string,
   {
     node: ReactNode;
@@ -72,7 +72,7 @@ function HFCReactRoot() {
   return createElement(
     Fragment,
     null,
-    Array.from(protals).map(([key, { container, node }]) =>
+    Array.from(portals).map(([key, { container, node }]) =>
       ReactDom.createPortal(node, container, key)
     )
   );
@@ -114,7 +114,7 @@ export function toHFC<
       return createElement(Comp, props);
     }
 
-    protals.set(key, {
+    portals.set(key, {
       container,
       node: createElement(Wrapper),
     });
@@ -128,7 +128,7 @@ export function toHFC<
       disconnected() {
         if (opts.disconnected) opts.disconnected();
 
-        protals.delete(key);
+        portals.delete(key);
         forceUpdate();
       },
     };
