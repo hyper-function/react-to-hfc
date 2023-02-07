@@ -21,13 +21,9 @@ it("should render hello", async () => {
     }
   );
 
-  const hfc = HFC(dom.window.document.body, {
-    attrs: {},
-    events: {},
-    slots: {},
-    _: {},
-  });
+  const hfc = HFC({});
 
+  hfc.connected(dom.window.document.body);
   await nextTick();
 
   expect(dom.window.document.body.innerHTML).toBe("<h1>hello hfc!</h1>");
@@ -51,20 +47,19 @@ it("should accept attrs and _", async () => {
     }
   );
 
-  const hfc = HFC(dom.window.document.body, {
+  const hfc = HFC({
     attrs: {
       a: 1,
       b: "bb",
       c: false,
       d: [1, 2],
     },
-    events: {},
-    slots: {},
     _: {
       e: 3,
     },
   });
 
+  hfc.connected(dom.window.document.body);
   await nextTick();
   expect(dom.window.document.body.innerHTML).toBe(
     "<h1>a: 1 b: bb c: false d: 1,2 e: 3</h1>"
@@ -77,8 +72,6 @@ it("should accept attrs and _", async () => {
       c: true,
       d: [2, 3],
     },
-    events: {},
-    slots: {},
     _: {
       e: 4,
     },
@@ -99,7 +92,8 @@ it("should accept event", async () => {
       useEffect(() => {
         props.onHello();
       }, []);
-      return createElement("h1", null, "hello");
+
+      return createElement("h1", {}, "hello");
     },
     {
       tag: "span",
@@ -109,15 +103,13 @@ it("should accept event", async () => {
     }
   );
 
-  const hfc = HFC(dom.window.document.body, {
-    attrs: {},
+  const hfc = HFC({
     events: {
       onHello,
     },
-    slots: {},
-    _: {},
   });
 
+  hfc.connected(dom.window.document.body);
   await nextTick();
 
   expect(onHello).toHaveBeenCalledTimes(1);
@@ -131,13 +123,12 @@ it("should accept slot", async () => {
     function Comp(props) {
       return createElement("h1", null, [
         createElement(props.default, {
-          key: "deft",
-          _tag: "span",
-          _key: "deft",
-          _props: {
-            id: "123",
+          key: "1",
+          tag: "span",
+          id: "123",
+          args: {
+            a: 1,
           },
-          a: 1,
         }),
       ]);
     },
@@ -150,53 +141,48 @@ it("should accept slot", async () => {
   );
 
   const defaultSlot = vi.fn((container, args) => {
-    container.innerHTML = "hello slot!";
+    if (!args) return;
+    container.innerHTML = "hello slot! " + args.a;
   });
 
-  const hfc = HFC(dom.window.document.body, {
-    attrs: {},
+  const hfc = HFC({
     events: {
       onHello,
     },
     slots: {
       default: defaultSlot,
     },
-    _: {},
   });
 
+  hfc.connected(dom.window.document.body);
   await nextTick();
 
   expect(defaultSlot.mock.lastCall![1]).toEqual({
-    key: "deft",
-    _tag: "span",
-    _key: "deft",
-    _props: { id: "123" },
     a: 1,
   });
 
   expect(dom.window.document.body.innerHTML).include(
-    `<span id="123">hello slot!</span>`
+    `<span id="123">hello slot! 1</span>`
   );
 
   const defaultSlot1 = vi.fn((container, args) => {
-    container.innerHTML = "hello slot again";
+    if (!args) return;
+    container.innerHTML = "hello slot again " + args.a;
   });
 
   hfc.changed({
-    attrs: {},
     events: {
       onHello,
     },
     slots: {
       default: defaultSlot1,
     },
-    _: {},
   });
 
   await nextTick();
 
   expect(dom.window.document.body.innerHTML).include(
-    `<span id="123">hello slot again</span>`
+    `<span id="123">hello slot again 1</span>`
   );
 });
 
@@ -233,7 +219,7 @@ it("should render multiple hfc", async () => {
     }
   );
 
-  const hfc1 = HFC(c1, {
+  const hfc1 = HFC({
     attrs: {
       name: "c1",
     },
@@ -241,11 +227,11 @@ it("should render multiple hfc", async () => {
       onMount: onC1Mount,
       onUnmount: onC1UnMount,
     },
-    slots: {},
-    _: {},
   });
 
-  const hfc2 = HFC(c2, {
+  hfc1.connected(c1);
+
+  const hfc2 = HFC({
     attrs: {
       name: "c2",
     },
@@ -253,11 +239,11 @@ it("should render multiple hfc", async () => {
       onMount: onC2Mount,
       onUnmount: onC2UnMount,
     },
-    slots: {},
-    _: {},
   });
 
-  const hfc3 = HFC(c3, {
+  hfc2.connected(c2);
+
+  const hfc3 = HFC({
     attrs: {
       name: "c3",
     },
@@ -265,10 +251,9 @@ it("should render multiple hfc", async () => {
       onMount: onC3Mount,
       onUnmount: onC3UnMount,
     },
-    slots: {},
-    _: {},
   });
 
+  hfc3.connected(c3);
   await nextTick();
 
   expect(dom.window.document.body.innerHTML).include(

@@ -10,22 +10,24 @@ import type {
 } from "hyper-function-component";
 
 const slotToReactComponent =
-  (renderSlot: (container: Element, args: any) => void) =>
-  (props: {
-    _tag?: string;
-    _key?: string;
-    _props: Record<string, unknown>;
-    [k: string]: unknown;
-  }) => {
+  (slotRenderFn: (container: Element, args?: any) => void) =>
+  (props: { tag?: string; args: Record<string, any>; [k: string]: any }) => {
     const ref = useRef<Element>(null);
 
     useEffect(() => {
-      renderSlot(ref.current!, { key: props._key, ...props });
+      return () => {
+        // unmount slot
+        slotRenderFn(ref.current!);
+      };
+    }, []);
+
+    useEffect(() => {
+      slotRenderFn(ref.current!, props.args);
     });
 
     return createElement(
-      props._tag || "div",
-      { ref, key: props._key, ...props._props },
+      props.tag || "div",
+      { ...props, ref, tag: undefined, args: undefined },
       null
     );
   };
@@ -33,12 +35,14 @@ const slotToReactComponent =
 function toReactProps(props: HfcProps) {
   const reactProps = { ...props.attrs, ...props.events, ...props._ };
 
-  for (const key in props.slots) {
-    const slotRenderFn = props.slots[key];
-    if (!slotRenderFn) continue;
+  if (props.slots) {
+    for (const key in props.slots) {
+      const slotRenderFn = props.slots[key];
+      if (!slotRenderFn) continue;
 
-    reactProps[key] = slotToReactComponent(slotRenderFn);
-    (reactProps[key] as any)._render = slotRenderFn;
+      reactProps[key] = slotToReactComponent(slotRenderFn);
+      (reactProps[key] as any)._render = slotRenderFn;
+    }
   }
 
   return reactProps;
@@ -50,12 +54,9 @@ export type Options = {
   ver: string;
   names: [string[], string[], string[], string[]];
   connected?: (container: Element) => void;
+  changed?: (props: HfcProps, partial?: boolean) => void;
   disconnected?: () => void;
 };
-
-let uid = 0;
-let forceUpdate = () => {};
-export const rootElement = document.createElement("div");
 
 const portals = new Map<
   string,
@@ -65,9 +66,13 @@ const portals = new Map<
   }
 >();
 
+let uuid = 0;
+let forceUpdateRoot = () => {};
+export const rootElement = document.createElement("div");
+
 function HFCReactRoot() {
   const [, update] = useState(0);
-  forceUpdate = () => update((n) => n + 1);
+  forceUpdateRoot = () => update((n) => n + 1);
 
   return createElement(
     Fragment,
@@ -96,40 +101,71 @@ export function toHFC<
   P extends HfcProps = HfcProps,
   M extends HfcMethods = HfcMethods
 >(Comp: any, opts: Options) {
-  const HFC: HyperFunctionComponent<T, P, M> = (
-    container: Element,
-    initProps: P
-  ) => {
-    if (opts.connected) opts.connected(container);
+  const HFC: HyperFunctionComponent<T, P, M> = (initProps: P) => {
+    const key = "k" + uuid++;
 
-    const key = "k" + uid++;
+    const currentProps = {
+      attrs: initProps.attrs || {},
+      events: initProps.events || {},
+      slots: initProps.slots || {},
+      _: initProps._ || {},
+    };
 
-    let changeReactProps: (props: HfcProps) => void;
+    let forceUpdateWrapper: () => void;
     function Wrapper() {
-      const [props, setProps] = useState(toReactProps(initProps));
-
-      changeReactProps = (hfcProps: HfcProps) =>
-        setProps(toReactProps(hfcProps));
+      const [, update] = useState(0);
+      forceUpdateWrapper = () => update((n) => n + 1);
+      const props = toReactProps(currentProps);
 
       return createElement(Comp, props);
     }
 
-    portals.set(key, {
-      container,
-      node: createElement(Wrapper),
-    });
-
-    forceUpdate();
     return {
-      changed(props: P) {
-        changeReactProps(props);
+      connected(container: Element) {
+        if (opts.connected) opts.connected(container);
+
+        portals.set(key, {
+          container,
+          node: createElement(Wrapper),
+        });
+
+        forceUpdateRoot();
+      },
+
+      changed(props: P, partial?: boolean) {
+        if (opts.changed) opts.changed(props, partial);
+        if (props.attrs) {
+          currentProps.attrs = partial
+            ? { ...currentProps.attrs, ...props.attrs }
+            : props.attrs;
+        }
+
+        if (props.events) {
+          currentProps.events = partial
+            ? { ...currentProps.events, ...props.events }
+            : props.events;
+        }
+
+        if (props.slots) {
+          currentProps.slots = partial
+            ? { ...currentProps.slots, ...props.slots }
+            : props.slots;
+        }
+
+        if (props._) {
+          currentProps._ = partial
+            ? { ...currentProps._, ...props._ }
+            : props._;
+        }
+
+        forceUpdateWrapper();
       },
 
       disconnected() {
         if (opts.disconnected) opts.disconnected();
 
         portals.delete(key);
-        forceUpdate();
+        forceUpdateRoot();
       },
     };
   };
@@ -175,15 +211,14 @@ export function toHFCReact(Comp: any, opts: Options): any {
 
 function toHfcSlot(Comp: any) {
   return (props: {
-    _tag?: string;
-    _key?: string;
-    _props: Record<string, unknown>;
-    [k: string]: unknown;
+    tag?: string;
+    args: Record<string, any>;
+    [k: string]: any;
   }) => {
     return createElement(
-      props._tag || "div",
-      { key: props._key, ...props._props },
-      createElement(Comp, props as any)
+      props.tag || "div",
+      props,
+      createElement(Comp, props.args)
     );
   };
 }
