@@ -7,23 +7,35 @@ import type {
   HfcProps,
   HfcMethods,
   HyperFunctionComponent,
+  HfcSlotCallback,
+  HfcSlotOptions,
 } from "hyper-function-component";
 
 const slotToReactComponent =
-  (slotRenderFn: (container: Element, args?: any) => void) =>
+  (slotRenderFn: HfcSlotCallback) =>
   (props: { tag?: string; args: Record<string, any>; [k: string]: any }) => {
     const ref = useRef<Element>(null);
+    const hfcSlot = useRef<HfcSlotOptions | null>(null);
 
     useEffect(() => {
+      if (hfcSlot.current !== null) {
+        hfcSlot.current.args = props.args;
+        hfcSlot.current.changed?.();
+      }
+    });
+
+    useEffect(() => {
+      hfcSlot.current = {
+        args: props.args,
+        target: ref.current!,
+      };
+
+      slotRenderFn(hfcSlot.current);
       return () => {
         // unmount slot
-        slotRenderFn(ref.current!);
+        hfcSlot.current!.removed?.();
       };
     }, []);
-
-    useEffect(() => {
-      slotRenderFn(ref.current!, props.args);
-    });
 
     return createElement(
       props.tag || "div",

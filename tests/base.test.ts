@@ -140,9 +140,8 @@ it("should accept slot", async () => {
     }
   );
 
-  const defaultSlot = vi.fn((container, args) => {
-    if (!args) return;
-    container.innerHTML = "hello slot! " + args.a;
+  const defaultSlot = vi.fn((slot) => {
+    slot.target.innerHTML = "hello slot! " + slot.args.a;
   });
 
   const hfc = HFC({
@@ -157,7 +156,7 @@ it("should accept slot", async () => {
   hfc.connected(dom.window.document.body);
   await nextTick();
 
-  expect(defaultSlot.mock.lastCall![1]).toEqual({
+  expect(defaultSlot.mock.lastCall![0].args).toEqual({
     a: 1,
   });
 
@@ -165,9 +164,8 @@ it("should accept slot", async () => {
     `<span id="123">hello slot! 1</span>`
   );
 
-  const defaultSlot1 = vi.fn((container, args) => {
-    if (!args) return;
-    container.innerHTML = "hello slot again " + args.a;
+  const defaultSlot1 = vi.fn((slot) => {
+    slot.target.innerHTML = "hello slot again " + slot.args.a;
   });
 
   hfc.changed({

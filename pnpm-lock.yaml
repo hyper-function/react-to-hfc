@@ -5,7 +5,7 @@ specifiers:
   '@types/node': ^18.0.1
   '@types/react': ^17.0.3
   '@types/react-dom': ^17.0.3
-  hyper-function-component: ^2.3.1
+  hyper-function-component: ^2.3.4
   jsdom: ^21.1.0
   react: '>= 16.10.2'
   react-dom: '>= 16.10.2'
@@ -18,7 +18,7 @@ devDependencies:
   '@types/node': 18.11.18
   '@types/react': 17.0.53
   '@types/react-dom': 17.0.18
-  hyper-function-component: 2.3.1
+  hyper-function-component: 2.3.4
   jsdom: 21.1.0
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
@@ -546,8 +546,8 @@ packages:
       - supports-color
     dev: true
 
-  /hyper-function-component/2.3.1:
-    resolution: {integrity: sha512-8XCh6UiHWHJ2C88ag9pt//9w2EyGxy2RUymfwzWFHUGA17fgpphNNsdMjdAVl+OD9kHjhCs7n7GX4aFce/6QRg==}
+  /hyper-function-component/2.3.4:
+    resolution: {integrity: sha512-7SH68HJR+hCn1wAVHQHkK50PBz6XUCbslHeloBPR3SkTfE/VyulyPtKU2oDQjoG9hc9nhCmOi09fE372+F+gwQ==}
     dev: true
 
   /iconv-lite/0.6.3:
